@@ -119,11 +119,17 @@ def get_max_diffs(pi, pomdp):
         x, *rest = [a] * exp
         return ddot(x, *rest)
 
-    MC_SS_sasa = np.linalg.tensorinv(I_sa - pomdp.gamma * dot(T, Pi_s))
-    TD_SS_sasa = np.linalg.tensorinv(I_sa - pomdp.gamma * dot(T, td_policy))
+    # Ψ^{SA} using MC policy spreading tensor
+    MC_SR_sasa = np.linalg.tensorinv(I_sa - pomdp.gamma * dot(T, Pi_s))
+
+    # Ψ^{SA} using TD policy spreading tensor
+    TD_SR_sasa = np.linalg.tensorinv(I_sa - pomdp.gamma * dot(T, td_policy))
+
+    # Ψ^{ΩA} using effective MDP transition fn
     TD_SF_oaoa = np.linalg.tensorinv(I_oa - pomdp.gamma * dot(W, T, Phi, Pi))
 
-    MC_SF_oaoa = dot(W, ddot(MC_SS_sasa, Phi_A))
+    # Ψ^{ΩA} using (W Ψ^{SA} Φ), for the Ψ^{SA} with the MC policy spreading tensor
+    MC_SF_oaoa = dot(W, ddot(MC_SR_sasa, Phi_A))
 
     # pomdp_mdp_predictions = [
     #     (dot(W, I_sa), ddot(I_oa, W_A)),
@@ -151,26 +157,28 @@ def get_max_diffs(pi, pomdp):
     T_sasa_1 = dot(T, K1)
     R_sa = np.einsum("ast,ast->sa", pomdp.T, pomdp.R)
 
-    SS_0 = np.linalg.tensorinv(I_sa - pomdp.gamma * T_sasa_0)
-    SS_1 = np.linalg.tensorinv(I_sa - pomdp.gamma * T_sasa_1)
+    # TD(λ) versions (identical to the above for λ in {0, 1})
+    SR_0 = np.linalg.tensorinv(I_sa - pomdp.gamma * T_sasa_0)
+    SR_1 = np.linalg.tensorinv(I_sa - pomdp.gamma * T_sasa_1)
 
-    Q0_sa = ddot(SS_0, R_sa)
-    Q1_sa = ddot(SS_1, R_sa)
+    Q0_sa = ddot(SR_0, R_sa)
+    Q1_sa = ddot(SR_1, R_sa)
 
-    SF_0 = W @ SS_0
-    SF_1 = W @ SS_1
+    # ΩA x SA
+    SF_0 = W @ SR_0
+    SF_1 = W @ SR_1
 
     Q0_wa = W @ Q0_sa
     Q1_wa = W @ Q1_sa
 
     diffs = {
         "∆ K": np.max(np.abs(K0 - K1)),
-        "∆ SS": np.max(np.abs(SS_0 - SS_1)),
-        "Δ SF": np.max(np.abs(SF_0 - SF_1)),
+        "∆ SR_sasa": np.max(np.abs(SR_0 - SR_1)),
         "∆ Q_sa": np.max(np.abs(Q0_sa - Q1_sa)),
         "∆ Q_wa": np.max(np.abs(Q0_wa - Q1_wa)),
-        # "Δ SS_sasa": np.max(np.abs(MC_SS_sasa - TD_SS_sasa)),
+        # "Δ SR_sasa": np.max(np.abs(MC_SR_sasa - TD_SR_sasa)),
         # "Δ SF_oasa": np.max(np.abs(MC_SF_oasa - TD_SF_oasa)),
+        "Δ SF_oasa": np.max(np.abs(SF_0 - SF_1)),
         "Δ SF_oaoa": np.max(np.abs(MC_SF_oaoa - TD_SF_oaoa)),
     }
     return diffs
@@ -194,6 +202,8 @@ for spec, n_params in specs_and_n_params.items():
         diffs["spec"] = spec
         data.append(diffs)
 
+spec_order = lambda specs: [list(specs_and_n_params.keys()).index(spec) for spec in specs]
+
 with open("output.txt", "w") as f:
-    result = pd.DataFrame(data).groupby(["spec"]).max().round(4)
+    result = pd.DataFrame(data).groupby(["spec"]).max().round(4)[["∆ K", "∆ SR_sasa", "∆ Q_sa", "∆ Q_wa", "Δ SF_oasa", "Δ SF_oaoa"]].sort_index(key=spec_order)
     f.write(result.to_string())
