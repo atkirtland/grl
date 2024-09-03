@@ -34,14 +34,14 @@ mpl.rcParams.update(
 np.set_printoptions(precision=8)
 
 seed = 2020
-n_samples = 21
+n_samples = 11
 
 rng = random.PRNGKey(seed=seed)
 np.random.seed(seed)
 
 
 def get_policy(spec, p, q=0.5, r=0.5, a=0.5):
-    if spec == "ld_zero_by_t_projection":
+    if spec in ["ld_zero_by_t_projection", "ld_zero_by_mdp"]:
         pi = np.array(
             [
                 [p, 1 - p],
@@ -67,7 +67,7 @@ def get_policy(spec, p, q=0.5, r=0.5, a=0.5):
         pi = np.array(
             [
                 [p, 1 - p],
-                [p, 1 - p],
+                [q, 1 - q],
                 [q, 1 - q],
                 [r, 1 - r],
                 [0.5, 0.5],
@@ -94,7 +94,7 @@ def get_max_diffs(pi, pomdp):
     s, o = Phi.shape
     sa = s * a
     oa = o * a
-    plt.imshow(Phi @ W)
+    # plt.imshow(Phi @ W)
 
     I_a = np.eye(a)
     W_A = np.kron(W, I_a).reshape(o, a, s, a)
@@ -185,6 +185,7 @@ def get_max_diffs(pi, pomdp):
 
 
 specs_and_n_params = {
+    "ld_zero_by_mdp": 3,
     "ld_zero_by_k_equality": 3,
     "ld_zero_by_t_projection": 3,
     "ld_zero_by_r_projection": 1,
