@@ -52,11 +52,12 @@ hex = [
 palette = sns.color_palette(hex)
 palette
 col_wrap = None
-# col_wrap = 2
+col_wrap = 2
 # test = True
 test = False
 
-data = pd.read_csv('results_rnn_30seeds.csv')
+data = pd.read_csv('rnn_results_undiscounted.csv')
+# data = data.query('algo!="memoryless_ppo"')
 data['seed'].unique()[0]
 g = sns.relplot(
     data=data.query('seed==0') if test else data,
@@ -78,15 +79,15 @@ titles = [
     r'RockSample $11\times 11$',
     r'RockSample $15\times 15$',
     r'Battleship $10\times 10$',
-    r'P.O. PacMan'
+    r'Partially Observable PacMan'
 ]
 for ax, title in zip(axes, titles):
     ax.set_title(title)
     ax.set_xlabel('Timestep')
     ax.set_ylabel('')
 
-axes[0].set_ylabel('Discounted Return')
-axes[2].set_ylabel('Discounted Return')
+axes[0].set_ylabel('Episode Reward')
+axes[2].set_ylabel('Episode Reward')
 
 # Clean up the legend
 leg = g._legend
@@ -105,6 +106,6 @@ axes[-1].legend(handles=handles, labels=texts, loc='lower right', fancybox=True,
 
 plt.tight_layout()
 if not test:
-    plt.savefig(f'nice-rnn{"" if col_wrap is None else "-2x2"}.png')
+    plt.savefig(f'undiscounted-rnn{"-1x4x3" if col_wrap is None else "-2x2x3"}.png', dpi=300)
 # plt.savefig('nice-rnn.png')
 plt.show()

@@ -126,7 +126,8 @@ def get_max_diffs(pi, pomdp):
     TD_SR_sasa = np.linalg.tensorinv(I_sa - pomdp.gamma * dot(T, td_policy))
 
     # Ψ^{ΩA} using effective MDP transition fn
-    TD_SF_oaoa = np.linalg.tensorinv(I_oa - pomdp.gamma * dot(W, T, Phi, Pi))
+    TD_SF_yellow_oaoa = np.linalg.tensorinv(I_oa - pomdp.gamma * dot(W, T, Phi, Pi))
+    TD_SF_blue_oaoa = dot(W, ddot(TD_SR_sasa, Phi_A))
 
     # Ψ^{ΩA} using (W Ψ^{SA} Φ), for the Ψ^{SA} with the MC policy spreading tensor
     MC_SF_oaoa = dot(W, ddot(MC_SR_sasa, Phi_A))
@@ -179,7 +180,9 @@ def get_max_diffs(pi, pomdp):
         # "Δ SR_sasa": np.max(np.abs(MC_SR_sasa - TD_SR_sasa)),
         # "Δ SF_oasa": np.max(np.abs(MC_SF_oasa - TD_SF_oasa)),
         "Δ SF_oasa": np.max(np.abs(SF_0 - SF_1)),
-        "Δ SF_oaoa": np.max(np.abs(MC_SF_oaoa - TD_SF_oaoa)),
+        "Δ SF_oaoa_yellow_red": np.max(np.abs(MC_SF_oaoa - TD_SF_yellow_oaoa)),
+        "Δ SF_oaoa_blue_red": np.max(np.abs(MC_SF_oaoa - TD_SF_blue_oaoa)),
+        "Δ SF_TD_yellow_blue": np.max(np.abs(TD_SF_blue_oaoa - TD_SF_yellow_oaoa)),
     }
     return diffs
 
@@ -205,6 +208,7 @@ for spec, n_params in specs_and_n_params.items():
 
 spec_order = lambda specs: [list(specs_and_n_params.keys()).index(spec) for spec in specs]
 
-with open("output.txt", "w") as f:
-    result = pd.DataFrame(data).groupby(["spec"]).max().round(4)[["∆ K", "∆ SR_sasa", "∆ Q_sa", "∆ Q_wa", "Δ SF_oasa", "Δ SF_oaoa"]].sort_index(key=spec_order)
-    f.write(result.to_string())
+# with open("output.txt", "w") as f:
+result = pd.DataFrame(data).groupby(["spec"]).max().round(4)[["∆ K", "∆ SR_sasa", "∆ Q_sa", "∆ Q_wa", "Δ SF_oasa", "Δ SF_oaoa_yellow_red", "Δ SF_oaoa_blue_red", "Δ SF_TD_yellow_blue"]].sort_index(key=spec_order)
+result
+# f.write(result.to_string())

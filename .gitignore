@@ -22,3 +22,9 @@ logs/
 .onager
 generated/
 scripts/runs/
+*.png
+*.mp4
+*.npy
+*.csv
+*.zip
+
