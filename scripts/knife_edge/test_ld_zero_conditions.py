@@ -74,23 +74,14 @@ def get_policy(spec, p=0.5, q=0.5, r=0.5, a=0.5):
                 [0.5, 0.5],
             ]
         )
-    elif spec in [
-        "tiger-alt-start",
-        "network",
-        "tmaze_5_two_thirds_up",
-        "example_7",
-        "4x3.95",
-        "cheese.95",
-        "network",
-        "shuttle.95",
-        "paint.95",
-        "hallway",
-        "bridge-repair",
-    ]:
-        pi = "random"
     else:
         raise NotImplementedError()
     return pi
+
+
+def get_random_policy(shape):
+    pi = np.random.rand(*shape)
+    return pi / pi.sum(axis=1)[:, None]
 
 
 def get_max_diffs(pi, pomdp):
@@ -232,12 +223,9 @@ for spec, n_params in specs_and_n_params.items():
         if n_params > 0:
             pi = get_policy(spec, *probs)
         else:
-            pi = get_policy(spec)
-            assert isinstance(pi, str) and pi == "random"
             n_o = pomdp.phi.shape[1]
             n_a = pomdp.T.shape[0]
-            pi = np.random.rand(n_o, n_a)
-            pi = pi / pi.sum(axis=1)[:, None]
+            pi = get_random_policy((n_o, n_a))
         diffs = get_max_diffs(pi, pomdp)
         diffs["spec"] = spec
         data.append(diffs)
